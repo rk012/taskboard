@@ -1,5 +1,7 @@
 package io.github.rk012.taskboard.items
 
+import io.github.rk012.taskboard.TaskStatus
+import io.github.rk012.taskboard.exceptions.*
 import java.util.UUID
 
 sealed class TaskObject(val name: String) {
@@ -8,23 +10,29 @@ sealed class TaskObject(val name: String) {
     protected val dependencies = mutableListOf<TaskObject>() // Other TaskObjects this depends on
     private val dependents = mutableListOf<TaskObject>() // Other TaskObjects that depend on this
 
-    fun addDependency(other: TaskObject): Boolean {
-        // TODO check for circular dependencies
-        if (dependencies.contains(other)) return false
+    fun addDependency(other: TaskObject) {
+        if (dependencies.contains(other)) throw DependencyAlreadyExistsException()
+        if (hasDependency(other)) throw CircularDependencyException()
 
         dependencies.add(other)
         other.dependents.add(this)
         update()
-
-        return true
     }
 
-    fun removeDependency(other: TaskObject): Boolean {
-        if (!dependencies.remove(other)) return false
+    fun hasDependency(other: TaskObject): Boolean {
+        if (dependencies.contains(other)) return true
+
+        dependencies.forEach {
+            if (it.hasDependency(other)) return true
+        }
+
+        return false
+    }
+
+    fun removeDependency(other: TaskObject) {
+        if (!dependencies.remove(other)) throw NoSuchDependencyException()
 
         other.dependents.remove(this)
-
-        return true
     }
 
     private fun update() {
@@ -36,5 +44,5 @@ sealed class TaskObject(val name: String) {
     }
 
     protected abstract fun updateSelf()
-    abstract fun getStatus(): Boolean
+    abstract fun getStatus(): TaskStatus
 }
