@@ -35,7 +35,7 @@ sealed class TaskObject(val name: String) {
         other.dependents.remove(this)
     }
 
-    private fun update() {
+    protected fun update() {
         updateSelf()
 
         dependents.forEach {
@@ -43,6 +43,8 @@ sealed class TaskObject(val name: String) {
         }
     }
 
+    var status: TaskStatus = TaskStatus.NOT_STARTED
+        protected set
+
     protected abstract fun updateSelf()
-    abstract fun getStatus(): TaskStatus
 }
