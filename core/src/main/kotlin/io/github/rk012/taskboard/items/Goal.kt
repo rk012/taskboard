@@ -2,7 +2,7 @@ package io.github.rk012.taskboard.items
 
 import io.github.rk012.taskboard.TaskStatus
 
-class Goal(name: String): TaskObject(name) {
+class Goal internal constructor(name: String): TaskObject(name) {
     override fun updateSelf() {
         if (dependencies.all { it.status == TaskStatus.NOT_STARTED }) {
             status = TaskStatus.NOT_STARTED

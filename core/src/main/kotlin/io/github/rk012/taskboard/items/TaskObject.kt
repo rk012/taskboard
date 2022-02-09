@@ -6,13 +6,17 @@ import java.util.UUID
 
 sealed class TaskObject(val name: String) {
     val id = UUID.randomUUID().toString()
+    var status: TaskStatus = TaskStatus.NOT_STARTED
+        protected set
 
     protected val dependencies = mutableListOf<TaskObject>() // Other TaskObjects this depends on
     private val dependents = mutableListOf<TaskObject>() // Other TaskObjects that depend on this
 
+    init { update() }
+
     fun addDependency(other: TaskObject) {
         if (dependencies.contains(other)) throw DependencyAlreadyExistsException()
-        if (hasDependency(other)) throw CircularDependencyException()
+        if (other.hasDependency(this)) throw CircularDependencyException()
 
         dependencies.add(other)
         other.dependents.add(this)
@@ -42,9 +46,6 @@ sealed class TaskObject(val name: String) {
             it.update()
         }
     }
-
-    var status: TaskStatus = TaskStatus.NOT_STARTED
-        protected set
 
     protected abstract fun updateSelf()
 }

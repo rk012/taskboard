@@ -3,9 +3,8 @@ package io.github.rk012.taskboard.items
 import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.exceptions.MissingTaskReqsException
 
-class Task(name: String): TaskObject(name) {
-    var isComplete = false
-        private set
+class Task internal constructor(name: String): TaskObject(name) {
+    private var isComplete = false
 
     override fun updateSelf() {
         dependencies.forEach {
