@@ -119,6 +119,31 @@ class TaskObjectTest {
     }
 
     @Test
+    fun statusUpdateTest() {
+        setupDependencies()
+        t0.markAsComplete()
+        t1.markAsComplete()
+        t3.markAsComplete()
+        t2.markAsComplete()
+
+        t0.markAsIncomplete()
+
+        assertEquals(TaskStatus.NOT_STARTED, t3.status)
+        assertEquals(TaskStatus.IN_PROGRESS, g0.status)
+
+        t0.markAsComplete()
+        t1.markAsIncomplete()
+
+        assertEquals(TaskStatus.NOT_STARTED, t2.status)
+        assertEquals(TaskStatus.NOT_STARTED, t3.status)
+
+        t1.delink()
+
+        assertEquals(TaskStatus.IN_PROGRESS, t2.status)
+        assertEquals(TaskStatus.IN_PROGRESS, t3.status)
+    }
+
+    @Test
     fun exceptionTest() {
         assertThrows<NoSuchDependencyException> { t0.removeDependency(t1) }
 

@@ -23,4 +23,9 @@ class Task internal constructor(name: String): TaskObject(name) {
         isComplete = true
         update()
     }
+
+    fun markAsIncomplete() {
+        isComplete = false
+        update()
+    }
 }

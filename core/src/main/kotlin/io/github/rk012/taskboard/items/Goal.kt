@@ -10,7 +10,7 @@ class Goal internal constructor(name: String): TaskObject(name) {
         }
 
         dependencies.forEach {
-            if (it.status == TaskStatus.IN_PROGRESS) {
+            if (it.status != TaskStatus.COMPLETE) {
                 status = TaskStatus.IN_PROGRESS
                 return
             }

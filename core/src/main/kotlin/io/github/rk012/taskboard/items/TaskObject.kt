@@ -37,6 +37,20 @@ sealed class TaskObject(val name: String) {
         if (!dependencies.remove(other)) throw NoSuchDependencyException()
 
         other.dependents.remove(this)
+        update()
+    }
+
+    internal fun delink() {
+        dependencies.forEach {
+            removeDependency(it)
+        }
+
+        // List needs to be copied since the removeDependency function modifies the original list
+        dependents.toList().forEach {
+            it.removeDependency(this)
+        }
+
+        update()
     }
 
     protected fun update() {
