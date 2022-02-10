@@ -1,6 +1,7 @@
 package io.github.rk012.taskboard.items
 
 import io.github.rk012.taskboard.TaskStatus
+import io.github.rk012.taskboard.Taskboard
 import io.github.rk012.taskboard.exceptions.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.assertDoesNotThrow
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
 
 class TaskObjectTest {
+    private lateinit var taskboard: Taskboard
+
     private lateinit var t0: Task
     private lateinit var t1: Task
     private lateinit var t2: Task
@@ -34,11 +37,13 @@ class TaskObjectTest {
 
     @BeforeEach
     fun createObjects() {
-        t0 = Task("Task 0")
-        t1 = Task("Task 1")
-        t2 = Task("Task 2")
-        t3 = Task("Task 3")
-        g0 = Goal("Goal 0")
+        taskboard = Taskboard("Test Taskboard")
+
+        t0 = taskboard.createTask("Task 0")
+        t1 = taskboard.createTask("Task 1")
+        t2 = taskboard.createTask("Task 2")
+        t3 = taskboard.createTask("Task 3")
+        g0 = taskboard.createGoal("Goal 0")
 
         objectList = listOf(t0, t1, t2, t3, g0)
     }
@@ -141,6 +146,13 @@ class TaskObjectTest {
 
         assertEquals(TaskStatus.IN_PROGRESS, t2.status)
         assertEquals(TaskStatus.IN_PROGRESS, t3.status)
+    }
+
+    @Test
+    fun dependentQueryTest() {
+        setupDependencies()
+
+        assertTrue(t1.getDependentSet().containsAll(setOf(t3, t2, g0)))
     }
 
     @Test

@@ -2,10 +2,8 @@ package io.github.rk012.taskboard.items
 
 import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.exceptions.*
-import java.util.UUID
 
-sealed class TaskObject(val name: String) {
-    val id = UUID.randomUUID().toString()
+sealed class TaskObject(val name: String, val id: String) {
     var status: TaskStatus = TaskStatus.NOT_STARTED
         protected set
 
@@ -38,6 +36,16 @@ sealed class TaskObject(val name: String) {
 
         other.dependents.remove(this)
         update()
+    }
+
+    internal fun getDependentSet(): Set<TaskObject> {
+        val dependentSet = dependents.toMutableSet()
+
+        dependents.forEach {
+            dependentSet.addAll(it.getDependentSet())
+        }
+
+        return dependentSet
     }
 
     internal fun delink() {
