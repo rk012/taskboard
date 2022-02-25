@@ -7,6 +7,7 @@ sealed class TaskObject(val name: String, val id: String) {
     var status: TaskStatus = TaskStatus.NOT_STARTED
         protected set
 
+    internal val labels = mutableListOf<String>()
     protected val dependencies = mutableListOf<TaskObject>() // Other TaskObjects this depends on
     private val dependents = mutableListOf<TaskObject>() // Other TaskObjects that depend on this
 
