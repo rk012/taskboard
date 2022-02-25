@@ -1,6 +1,7 @@
 package io.github.rk012.taskboard
 
 import io.github.rk012.taskboard.exceptions.NoSuchLabelException
+import io.github.rk012.taskboard.Taskboard.SortOptions
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
@@ -21,7 +22,7 @@ class TaskboardTest {
     }
 
     @Test
-    fun dependencySortTest() {
+    fun filterOrderTest() {
         val t0 = tb.createTask("Task 0")
         val t1 = tb.createTask("Task 1")
         val t2 = tb.createTask("Task 2")
@@ -31,8 +32,15 @@ class TaskboardTest {
 
         assertEquals(
             listOf(t2, t1, t0),
-            tb.sortByDependents()
+            tb.query(sortOptions = listOf(SortOptions.DEPENDENTS))
         )
+
+        assertEquals(
+            listOf(t0, t1, t2),
+            tb.query(sortOptions = listOf(SortOptions.NAME))
+        )
+
+        assertDoesNotThrow { tb.query(sortOptions = listOf(SortOptions.NAME, SortOptions.DEPENDENTS)) }
     }
 
     @Test
@@ -72,13 +80,36 @@ class TaskboardTest {
 
         assertEquals(listOf("Label 0", "Label 1", "Label 2"), t1.labels)
 
-        assertEquals(listOf(t0, t1, t2), tb.filterByLabels())
-        assertEquals(listOf(t0, t1, t2), tb.filterByLabels(listOf("Label 0", "Label 1")))
-        assertEquals(listOf(t0, t1), tb.filterByLabels(listOf("Label 0")))
-        assertEquals(listOf(t0, t2), tb.filterByLabels(listOf("Label 0", "Label 1"), listOf("Label 2")))
+        assertEquals(listOf(t0, t1, t2), tb.query())
+        assertEquals(listOf(t0, t1, t2), tb.query(includeLabels = listOf("Label 0", "Label 1")))
+        assertEquals(listOf(t0, t1), tb.query(includeLabels = listOf("Label 0")))
+        assertEquals(
+            listOf(t0, t2),
+            tb.query(
+                includeLabels = listOf("Label 0", "Label 1"),
+                excludeLabels = listOf("Label 2")
+            )
+        )
 
-        assertThrows<NoSuchLabelException> { tb.filterByLabels(include = listOf("Nonexistent")) }
-        assertThrows<NoSuchLabelException> { tb.filterByLabels(exclude = listOf("Nonexistent")) }
+        val t3 = tb.createTask("Task 3")
+
+        tb.addLabel(t3, "Label 0")
+
+        t0.addDependency(t3)
+        t1.addDependency(t3)
+        t2.addDependency(t1)
+        t2.addDependency(t0)
+
+        assertEquals(
+            listOf(t3, t0, t1),
+            tb.query(
+                sortOptions = listOf(SortOptions.DEPENDENTS),
+                includeLabels = listOf("Label 0")
+            )
+        )
+
+        assertThrows<NoSuchLabelException> { tb.query(includeLabels = listOf("Nonexistent")) }
+        assertThrows<NoSuchLabelException> { tb.query(excludeLabels = listOf("Nonexistent")) }
 
         assertFalse(tb.removeLabel(t1, "Nonexistent"))
         assertTrue(tb.removeLabel(t1, "Label 2"))

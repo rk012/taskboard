@@ -10,6 +10,11 @@ class Taskboard(val name: String) {
     private val taskObjects = mutableMapOf<String, TaskObject>()
     private val labels = mutableListOf<String>()
 
+    enum class SortOptions(val comparable: (TaskObject) -> Comparable<*>) {
+        DEPENDENTS({ -1 * it.getDependentSet().size }), // negated for descending order
+        NAME({ it.name })
+    }
+
     private fun <T> Collection<T>.containsAny(other: Collection<T>): Boolean {
         other.forEach {
             if (contains(it)) return true
@@ -75,18 +80,31 @@ class Taskboard(val name: String) {
         true
     }
 
-    //TODO replace these with a master filter method
-    fun sortByDependents() = taskObjects.values.sortedByDescending { it.getDependentSet().size }
+    fun query(
+        sortOptions: List<SortOptions> = emptyList(),
+        includeLabels: List<String> = emptyList(),
+        excludeLabels: List<String> = emptyList()
+    ): List<TaskObject> {
+        val sortComparables = mutableListOf<(TaskObject) -> Comparable<*>>()
 
-    fun filterByLabels(include: List<String> = listOf(), exclude: List<String> = listOf()): List<TaskObject> {
-        include.forEach {
+        sortOptions.forEach {
+            sortComparables.add(it.comparable)
+        }
+
+        SortOptions.values().forEach {
+            if (!sortComparables.contains(it.comparable)) sortComparables.add(it.comparable)
+        }
+
+        includeLabels.forEach {
             if (!hasLabel(it)) throw NoSuchLabelException(it)
         }
 
-        exclude.forEach {
+        excludeLabels.forEach {
             if (!hasLabel(it)) throw NoSuchLabelException(it)
         }
 
-        return taskObjects.values.filter { (include.isEmpty() || it.labels.containsAny(include)) && !it.labels.containsAny(exclude) }
+        return taskObjects.values.filter {
+            (includeLabels.isEmpty() || it.labels.containsAny(includeLabels)) && !it.labels.containsAny(excludeLabels)
+        }.sortedWith(compareBy(*sortComparables.toTypedArray()))
     }
 }
