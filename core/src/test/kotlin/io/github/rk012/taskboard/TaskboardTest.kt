@@ -108,6 +108,16 @@ class TaskboardTest {
             )
         )
 
+        t0.name = "z"
+
+        assertEquals(
+            listOf(t3, t1, t0),
+            tb.query(
+                sortOptions = listOf(SortOptions.DEPENDENTS),
+                includeLabels = listOf("Label 0")
+            )
+        )
+
         assertThrows<NoSuchLabelException> { tb.query(includeLabels = listOf("Nonexistent")) }
         assertThrows<NoSuchLabelException> { tb.query(excludeLabels = listOf("Nonexistent")) }
 

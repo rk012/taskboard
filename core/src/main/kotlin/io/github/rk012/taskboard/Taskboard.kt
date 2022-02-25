@@ -6,7 +6,7 @@ import io.github.rk012.taskboard.items.Task
 import io.github.rk012.taskboard.items.TaskObject
 import java.util.UUID
 
-class Taskboard(val name: String) {
+class Taskboard(var name: String) {
     private val taskObjects = mutableMapOf<String, TaskObject>()
     private val labels = mutableListOf<String>()
 

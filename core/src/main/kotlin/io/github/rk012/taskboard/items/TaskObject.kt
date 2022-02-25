@@ -3,7 +3,7 @@ package io.github.rk012.taskboard.items
 import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.exceptions.*
 
-sealed class TaskObject(val name: String, val id: String) {
+sealed class TaskObject(var name: String, val id: String) {
     var status: TaskStatus = TaskStatus.NOT_STARTED
         protected set
 
