@@ -5,14 +5,21 @@ import io.github.rk012.taskboard.items.Goal
 import io.github.rk012.taskboard.items.Task
 import io.github.rk012.taskboard.items.TaskObject
 import java.util.UUID
+import kotlin.reflect.KClass
 
 class Taskboard(var name: String) {
     private val taskObjects = mutableMapOf<String, TaskObject>()
     private val labels = mutableListOf<String>()
 
-    enum class SortOptions(val comparable: (TaskObject) -> Comparable<*>) {
+    enum class SortOptions(internal val comparable: (TaskObject) -> Comparable<*>) {
         DEPENDENTS({ -1 * it.getDependentSet().size }), // negated for descending order
         NAME({ it.name })
+    }
+
+    enum class FilterItems(internal val clazz: KClass<*>) {
+        TASK(Task::class),
+        GOAL(Goal::class),
+        ALL(TaskObject::class)
     }
 
     private fun <T> Collection<T>.containsAny(other: Collection<T>): Boolean {
@@ -83,7 +90,10 @@ class Taskboard(var name: String) {
     fun query(
         sortOptions: List<SortOptions> = emptyList(),
         includeLabels: List<String> = emptyList(),
-        excludeLabels: List<String> = emptyList()
+        excludeLabels: List<String> = emptyList(),
+        excludeCompleted: Boolean = false,
+        excludeNotStarted: Boolean = false,
+        filterItem: FilterItems = FilterItems.ALL
     ): List<TaskObject> {
         val sortComparables = mutableListOf<(TaskObject) -> Comparable<*>>()
 
@@ -104,7 +114,11 @@ class Taskboard(var name: String) {
         }
 
         return taskObjects.values.filter {
-            (includeLabels.isEmpty() || it.labels.containsAny(includeLabels)) && !it.labels.containsAny(excludeLabels)
+            filterItem.clazz.isInstance(it) &&
+                    (includeLabels.isEmpty() || it.labels.containsAny(includeLabels)) &&
+                    (!excludeCompleted || it.status != TaskStatus.COMPLETE) &&
+                    (!excludeNotStarted || it.status != TaskStatus.NOT_STARTED) &&
+                    !it.labels.containsAny(excludeLabels)
         }.sortedWith(compareBy(*sortComparables.toTypedArray()))
     }
 }

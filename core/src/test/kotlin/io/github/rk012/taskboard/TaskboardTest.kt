@@ -1,7 +1,7 @@
 package io.github.rk012.taskboard
 
 import io.github.rk012.taskboard.exceptions.NoSuchLabelException
-import io.github.rk012.taskboard.Taskboard.SortOptions
+import io.github.rk012.taskboard.Taskboard.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
@@ -131,5 +131,79 @@ class TaskboardTest {
 
         assertFalse(t0.labels.contains("Label 0"))
         assertFalse(tb.hasLabel("Label 0"))
+    }
+
+    @Test
+    fun queryTest() {
+        // Setup
+        val g0 = tb.createGoal("Goal 0")
+        val g1 = tb.createGoal("Goal 1")
+        val t0 = tb.createTask("Task 0")
+        val t1 = tb.createTask("Task 1")
+        val t2 = tb.createTask("Task 2")
+        val t3 = tb.createTask("Task 3")
+
+        for (i in 0..3) tb.createLabel("Label $i")
+
+        /*
+         * t3, t0 -> L0
+         *
+         *   g0
+         *  |  \
+         * t3  t2   L1
+         * | \ |
+         * t0 t1   L2
+         *  \ /
+         *   g1    L3
+         * */
+        g0.addDependency(t3)
+        g0.addDependency(t2)
+        t3.addDependency(t0)
+        t3.addDependency(t1)
+        t2.addDependency(t1)
+        g1.addDependency(t0)
+        g1.addDependency(t1)
+
+        tb.addLabel(t3, "Label 0")
+        tb.addLabel(t0, "Label 0")
+        tb.addLabel(t3, "Label 1")
+        tb.addLabel(t2, "Label 1")
+        tb.addLabel(t0, "Label 2")
+        tb.addLabel(t1, "Label 2")
+        tb.addLabel(g1, "Label 3")
+
+        t1.markAsComplete()
+
+        // Tests
+        assertEquals(
+            listOf(g0, g1),
+            tb.query(
+                filterItem = FilterItems.GOAL
+            )
+        )
+
+        // Should filter by dependents by default
+        assertEquals(
+            listOf(t1, t0, t2, t3),
+            tb.query(
+                filterItem = FilterItems.TASK
+            )
+        )
+
+        assertEquals(
+            listOf(t2),
+            tb.query(
+                includeLabels = listOf("Label 1"),
+                excludeNotStarted = true
+            )
+        )
+
+        assertEquals(
+            listOf(t0),
+            tb.query(
+                includeLabels = listOf("Label 2"),
+                excludeCompleted = true
+            )
+        )
     }
 }
