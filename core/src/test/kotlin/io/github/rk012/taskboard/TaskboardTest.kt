@@ -224,4 +224,54 @@ class TaskboardTest {
             )
         )
     }
+
+    @Test
+    fun serializationTest() {
+        // Setup
+        val g0 = tb.createGoal("Goal 0", LocalDateTime(2022, 2, 1, 0, 0))
+        val g1 = tb.createGoal("Goal 1", LocalDateTime(2022, 1, 20, 0, 0))
+        val t0 = tb.createTask("Task 0", LocalDateTime(2022, 1, 1, 0, 0))
+        val t1 = tb.createTask("Task 1", LocalDateTime(2022, 1, 1, 0, 0))
+        val t2 = tb.createTask("Task 2", LocalDateTime(2022, 1, 25, 0, 0))
+        val t3 = tb.createTask("Task 3", LocalDateTime(2022, 1, 25, 0, 0))
+
+        for (i in 0..3) tb.createLabel("Label $i")
+
+        /*
+         * t3, t0 -> L0
+         *
+         *   g0         2/1
+         *  |  \
+         * t3  t2  L1   1/25
+         * | \ |
+         * t0 t1   L2   1/1
+         *  \ /
+         *   g1    L3   1/20
+         * */
+        g0.addDependency(t3)
+        g0.addDependency(t2)
+        t3.addDependency(t0)
+        t3.addDependency(t1)
+        t2.addDependency(t1)
+        g1.addDependency(t0)
+        g1.addDependency(t1)
+
+        tb.addLabel(t3, "Label 0")
+        tb.addLabel(t0, "Label 0")
+        tb.addLabel(t3, "Label 1")
+        tb.addLabel(t2, "Label 1")
+        tb.addLabel(t0, "Label 2")
+        tb.addLabel(t1, "Label 2")
+        tb.addLabel(g1, "Label 3")
+
+        t1.markAsComplete()
+
+        //Tests
+        val s = tb.toSerializable()
+
+        assertEquals(
+            s,
+            Taskboard.createFromSerializable(s).toSerializable()
+        )
+    }
 }

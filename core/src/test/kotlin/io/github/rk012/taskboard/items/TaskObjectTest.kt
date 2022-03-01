@@ -3,6 +3,7 @@ package io.github.rk012.taskboard.items
 import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.Taskboard
 import io.github.rk012.taskboard.exceptions.*
+import io.github.rk012.taskboard.serialization.SerializableTaskObject
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -166,5 +167,24 @@ class TaskObjectTest {
 
         t1.addDependency(t2)
         assertThrows<CircularDependencyException> { t2.addDependency(t0) }
+    }
+
+    @Test
+    fun serializationTest() {
+        setupDependencies()
+
+        val s = t3.toSerializable()
+
+        assertEquals(
+            SerializableTaskObject(
+                t3.id,
+                "Task 3",
+                t3.time.toString(),
+                t3.labels,
+                false,
+                listOf(t0.id, t1.id)
+            ),
+            s
+        )
     }
 }

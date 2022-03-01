@@ -4,6 +4,7 @@ import io.github.rk012.taskboard.exceptions.NoSuchLabelException
 import io.github.rk012.taskboard.items.Goal
 import io.github.rk012.taskboard.items.Task
 import io.github.rk012.taskboard.items.TaskObject
+import io.github.rk012.taskboard.serialization.SerializableTaskboard
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -25,6 +26,26 @@ class Taskboard(var name: String) {
         TASK(Task::class),
         GOAL(Goal::class),
         ALL(TaskObject::class)
+    }
+
+    companion object {
+        internal fun createFromSerializable(s: SerializableTaskboard): Taskboard {
+            val tb = Taskboard(s.name)
+
+            s.labels.forEach { tb.labels.add(it) }
+
+            s.tasks.forEach { tb.taskObjects[it.id] = Task.createFromSerializable(it) }
+            s.goals.forEach { tb.taskObjects[it.id] = Goal.createFromSerializable(it) }
+
+            tb.taskObjects.values.forEach {
+                when (it) {
+                    is Task -> it.loadDependencies(tb)
+                    is Goal -> it.loadDependencies(tb)
+                }
+            }
+
+            return tb
+        }
     }
 
     private fun <T> Collection<T>.containsAny(other: Collection<T>): Boolean {
@@ -126,4 +147,11 @@ class Taskboard(var name: String) {
                     !it.labels.containsAny(excludeLabels)
         }.sortedWith(compareBy(*sortComparables.toTypedArray()))
     }
+
+    internal fun toSerializable() = SerializableTaskboard(
+        name,
+        labels,
+        taskObjects.values.filterIsInstance<Task>().map { it.toSerializable() },
+        taskObjects.values.filterIsInstance<Goal>().map { it.toSerializable() },
+    )
 }
