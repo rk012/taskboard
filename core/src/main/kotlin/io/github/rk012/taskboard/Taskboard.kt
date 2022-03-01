@@ -4,6 +4,10 @@ import io.github.rk012.taskboard.exceptions.NoSuchLabelException
 import io.github.rk012.taskboard.items.Goal
 import io.github.rk012.taskboard.items.Task
 import io.github.rk012.taskboard.items.TaskObject
+import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 
@@ -13,6 +17,7 @@ class Taskboard(var name: String) {
 
     enum class SortOptions(internal val comparable: (TaskObject) -> Comparable<*>) {
         DEPENDENTS({ -1 * it.getDependentSet().size }), // negated for descending order
+        TIME({ it.time }),
         NAME({ it.name })
     }
 
@@ -32,26 +37,26 @@ class Taskboard(var name: String) {
 
     operator fun get(id: String) = taskObjects[id]
 
-    fun createTask(name: String): Task {
+    fun createTask(name: String, time: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())): Task {
         var id = UUID.randomUUID().toString().split('-').joinToString("")
 
         if (!taskObjects.containsKey(id.substring(0..7))) {
             id = id.substring(0..7)
         }
 
-        val task = Task(name, id)
+        val task = Task(name, id, time)
         taskObjects[task.id] = task
         return task
     }
 
-    fun createGoal(name: String): Goal {
+    fun createGoal(name: String, time: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())): Goal {
         var id = UUID.randomUUID().toString().split('-').joinToString("")
 
         if (!taskObjects.containsKey(id.substring(0..7))) {
             id = id.substring(0..7)
         }
 
-        val goal = Goal(name, id)
+        val goal = Goal(name, id, time)
         taskObjects[goal.id] = goal
         return goal
     }
@@ -95,7 +100,7 @@ class Taskboard(var name: String) {
         excludeNotStarted: Boolean = false,
         filterItem: FilterItems = FilterItems.ALL
     ): List<TaskObject> {
-        val sortComparables = mutableListOf<(TaskObject) -> Comparable<*>>()
+        val sortComparables = mutableListOf<(TaskObject) -> Comparable<*>?>()
 
         sortOptions.forEach {
             sortComparables.add(it.comparable)

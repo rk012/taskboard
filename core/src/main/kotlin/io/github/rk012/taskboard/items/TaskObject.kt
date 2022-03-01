@@ -2,8 +2,9 @@ package io.github.rk012.taskboard.items
 
 import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.exceptions.*
+import kotlinx.datetime.LocalDateTime
 
-sealed class TaskObject(var name: String, val id: String) {
+sealed class TaskObject(var name: String, val id: String, var time: LocalDateTime) {
     var status: TaskStatus = TaskStatus.NOT_STARTED
         protected set
 

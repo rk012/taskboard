@@ -2,6 +2,7 @@ package io.github.rk012.taskboard
 
 import io.github.rk012.taskboard.exceptions.NoSuchLabelException
 import io.github.rk012.taskboard.Taskboard.*
+import kotlinx.datetime.LocalDateTime
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
@@ -103,7 +104,7 @@ class TaskboardTest {
         assertEquals(
             listOf(t3, t0, t1),
             tb.query(
-                sortOptions = listOf(SortOptions.DEPENDENTS),
+                sortOptions = listOf(SortOptions.DEPENDENTS, SortOptions.NAME),
                 includeLabels = listOf("Label 0")
             )
         )
@@ -113,7 +114,7 @@ class TaskboardTest {
         assertEquals(
             listOf(t3, t1, t0),
             tb.query(
-                sortOptions = listOf(SortOptions.DEPENDENTS),
+                sortOptions = listOf(SortOptions.DEPENDENTS, SortOptions.NAME),
                 includeLabels = listOf("Label 0")
             )
         )
@@ -136,25 +137,25 @@ class TaskboardTest {
     @Test
     fun queryTest() {
         // Setup
-        val g0 = tb.createGoal("Goal 0")
-        val g1 = tb.createGoal("Goal 1")
-        val t0 = tb.createTask("Task 0")
-        val t1 = tb.createTask("Task 1")
-        val t2 = tb.createTask("Task 2")
-        val t3 = tb.createTask("Task 3")
+        val g0 = tb.createGoal("Goal 0", LocalDateTime(2022, 2, 1, 0, 0))
+        val g1 = tb.createGoal("Goal 1", LocalDateTime(2022, 1, 20, 0, 0))
+        val t0 = tb.createTask("Task 0", LocalDateTime(2022, 1, 1, 0, 0))
+        val t1 = tb.createTask("Task 1", LocalDateTime(2022, 1, 1, 0, 0))
+        val t2 = tb.createTask("Task 2", LocalDateTime(2022, 1, 25, 0, 0))
+        val t3 = tb.createTask("Task 3", LocalDateTime(2022, 1, 25, 0, 0))
 
         for (i in 0..3) tb.createLabel("Label $i")
 
         /*
          * t3, t0 -> L0
          *
-         *   g0
+         *   g0         2/1
          *  |  \
-         * t3  t2   L1
+         * t3  t2  L1   1/25
          * | \ |
-         * t0 t1   L2
+         * t0 t1   L2   1/1
          *  \ /
-         *   g1    L3
+         *   g1    L3   1/20
          * */
         g0.addDependency(t3)
         g0.addDependency(t2)
@@ -178,6 +179,7 @@ class TaskboardTest {
         assertEquals(
             listOf(g0, g1),
             tb.query(
+                sortOptions = listOf(SortOptions.NAME),
                 filterItem = FilterItems.GOAL
             )
         )
@@ -203,6 +205,22 @@ class TaskboardTest {
             tb.query(
                 includeLabels = listOf("Label 2"),
                 excludeCompleted = true
+            )
+        )
+
+        assertEquals(
+            listOf(t1, t0, g1, t2, t3, g0),
+            tb.query(
+                sortOptions = listOf(SortOptions.TIME)
+            )
+        )
+
+        t2.time = LocalDateTime(2022, 1, 30, 0, 0)
+
+        assertEquals(
+            listOf(t1, t0, g1, t3, t2, g0),
+            tb.query(
+                sortOptions = listOf(SortOptions.TIME)
             )
         )
     }
