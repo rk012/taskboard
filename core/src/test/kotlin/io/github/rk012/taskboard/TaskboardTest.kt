@@ -12,7 +12,9 @@ class TaskboardTest {
     private lateinit var tb: Taskboard
 
     @BeforeEach
-    fun createTaskboard() { tb = Taskboard("Test Taskboard") }
+    fun createTaskboard() {
+        tb = Taskboard("Test Taskboard")
+    }
 
     @Test
     fun removeTest() {

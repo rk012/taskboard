@@ -12,7 +12,9 @@ sealed class TaskObject(var name: String, val id: String, var time: LocalDateTim
     protected val dependencies = mutableListOf<TaskObject>() // Other TaskObjects this depends on
     private val dependents = mutableListOf<TaskObject>() // Other TaskObjects that depend on this
 
-    init { update() }
+    init {
+        update()
+    }
 
     fun addDependency(other: TaskObject) {
         if (dependencies.contains(other)) throw DependencyAlreadyExistsException()

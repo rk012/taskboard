@@ -5,10 +5,14 @@ import io.github.rk012.taskboard.Taskboard
 import io.github.rk012.taskboard.serialization.SerializableTaskObject
 import kotlinx.datetime.LocalDateTime
 
-class Goal internal constructor(name: String, id: String, time: LocalDateTime): TaskObject(name, id, time) {
+class Goal internal constructor(name: String, id: String, time: LocalDateTime) : TaskObject(name, id, time) {
     private val dependencyIDs = mutableListOf<String>()
 
-    private constructor(name: String, id: String, time: LocalDateTime, dependencies: List<String>) : this(name, id, time) {
+    private constructor(name: String, id: String, time: LocalDateTime, dependencies: List<String>) : this(
+        name,
+        id,
+        time
+    ) {
         dependencyIDs.addAll(dependencies)
     }
 

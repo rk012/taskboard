@@ -6,11 +6,17 @@ import io.github.rk012.taskboard.exceptions.MissingTaskReqsException
 import io.github.rk012.taskboard.serialization.SerializableTaskObject
 import kotlinx.datetime.LocalDateTime
 
-class Task internal constructor(name: String, id: String, time: LocalDateTime): TaskObject(name, id, time) {
+class Task internal constructor(name: String, id: String, time: LocalDateTime) : TaskObject(name, id, time) {
     private val dependencyIDs = mutableListOf<String>()
     private var isComplete = false
 
-    private constructor(name: String, id: String, time: LocalDateTime, dependencies: List<String>, is_complete: Boolean) : this(name, id, time) {
+    private constructor(
+        name: String,
+        id: String,
+        time: LocalDateTime,
+        dependencies: List<String>,
+        is_complete: Boolean
+    ) : this(name, id, time) {
         this.isComplete = is_complete
         dependencyIDs.addAll(dependencies)
     }

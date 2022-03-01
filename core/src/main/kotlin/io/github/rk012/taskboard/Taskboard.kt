@@ -58,7 +58,10 @@ class Taskboard(var name: String) {
 
     operator fun get(id: String) = taskObjects[id]
 
-    fun createTask(name: String, time: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())): Task {
+    fun createTask(
+        name: String,
+        time: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    ): Task {
         var id = UUID.randomUUID().toString().split('-').joinToString("")
 
         if (!taskObjects.containsKey(id.substring(0..7))) {
@@ -70,7 +73,10 @@ class Taskboard(var name: String) {
         return task
     }
 
-    fun createGoal(name: String, time: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())): Goal {
+    fun createGoal(
+        name: String,
+        time: LocalDateTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    ): Goal {
         var id = UUID.randomUUID().toString().split('-').joinToString("")
 
         if (!taskObjects.containsKey(id.substring(0..7))) {
