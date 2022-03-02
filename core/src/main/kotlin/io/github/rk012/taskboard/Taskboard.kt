@@ -127,6 +127,7 @@ class Taskboard(var name: String) {
     fun query(
         sortOptions: List<SortOptions> = emptyList(),
         includeLabels: List<String> = emptyList(),
+        requireAllLabels: Boolean = false,
         excludeLabels: List<String> = emptyList(),
         excludeCompleted: Boolean = false,
         excludeNotStarted: Boolean = false,
@@ -152,7 +153,11 @@ class Taskboard(var name: String) {
 
         return taskObjects.values.filter {
             filterItem.clazz.isInstance(it) &&
-                    (includeLabels.isEmpty() || it.labels.containsAny(includeLabels)) &&
+                    (
+                            includeLabels.isEmpty() ||
+                                    (!requireAllLabels && it.labels.containsAny(includeLabels)) ||
+                                    (requireAllLabels && it.labels.containsAll(includeLabels))
+                            ) &&
                     (!excludeCompleted || it.status != TaskStatus.COMPLETE) &&
                     (!excludeNotStarted || it.status != TaskStatus.NOT_STARTED) &&
                     !it.labels.containsAny(excludeLabels)

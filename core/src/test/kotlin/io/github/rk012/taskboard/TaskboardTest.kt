@@ -188,6 +188,15 @@ class TaskboardTest {
 
         // Should filter by dependents by default
         assertEquals(
+            listOf(t3),
+            tb.query(
+                includeLabels = listOf("Label 0", "Label 1"),
+                requireAllLabels = true
+            )
+        )
+
+
+        assertEquals(
             listOf(t1, t0, t2, t3),
             tb.query(
                 filterItem = FilterItems.TASK
