@@ -50,7 +50,7 @@ class Taskboard(var name: String) {
             return tb
         }
 
-        internal fun fromJson(json: String) = createFromSerializable(Json.decodeFromString(json))
+        fun fromJson(json: String) = createFromSerializable(Json.decodeFromString(json))
     }
 
     private fun <T> Collection<T>.containsAny(other: Collection<T>): Boolean {
