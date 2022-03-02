@@ -9,6 +9,9 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.UUID
 import kotlin.reflect.KClass
 
@@ -29,7 +32,7 @@ class Taskboard(var name: String) {
     }
 
     companion object {
-        internal fun createFromSerializable(s: SerializableTaskboard): Taskboard {
+        private fun createFromSerializable(s: SerializableTaskboard): Taskboard {
             val tb = Taskboard(s.name)
 
             s.labels.forEach { tb.labels.add(it) }
@@ -46,6 +49,8 @@ class Taskboard(var name: String) {
 
             return tb
         }
+
+        internal fun fromJson(json: String) = createFromSerializable(Json.decodeFromString(json))
     }
 
     private fun <T> Collection<T>.containsAny(other: Collection<T>): Boolean {
@@ -154,10 +159,12 @@ class Taskboard(var name: String) {
         }.sortedWith(compareBy(*sortComparables.toTypedArray()))
     }
 
-    internal fun toSerializable() = SerializableTaskboard(
+    private fun toSerializable() = SerializableTaskboard(
         name,
         labels,
         taskObjects.values.filterIsInstance<Task>().map { it.toSerializable() },
-        taskObjects.values.filterIsInstance<Goal>().map { it.toSerializable() },
+        taskObjects.values.filterIsInstance<Goal>().map { it.toSerializable() }
     )
+
+    fun toJson() = Json.encodeToString(toSerializable())
 }

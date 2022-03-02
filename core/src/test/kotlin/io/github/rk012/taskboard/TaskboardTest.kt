@@ -228,7 +228,7 @@ class TaskboardTest {
     }
 
     @Test
-    fun serializationTest() {
+    fun jsonTest() {
         // Setup
         val g0 = tb.createGoal("Goal 0", LocalDateTime(2022, 2, 1, 0, 0))
         val g1 = tb.createGoal("Goal 1", LocalDateTime(2022, 1, 20, 0, 0))
@@ -269,11 +269,11 @@ class TaskboardTest {
         t1.markAsComplete()
 
         //Tests
-        val s = tb.toSerializable()
+        val json = tb.toJson()
 
         assertEquals(
-            s,
-            Taskboard.createFromSerializable(s).toSerializable()
+            json,
+            Taskboard.fromJson(json).toJson()
         )
     }
 }
