@@ -1,10 +1,11 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
-import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.arguments.convert
+import com.github.ajalt.clikt.parameters.arguments.validate
 import com.github.ajalt.clikt.parameters.options.*
 import io.github.rk012.taskboard.Taskboard
+import kotlinx.serialization.SerializationException
 import java.nio.file.Path
 import kotlin.io.path.*
 
@@ -45,7 +46,17 @@ class Init : CliktCommand(help = "Creates a new taskboard") {
 class Open : CliktCommand(help = "Opens an existing taskboard") {
     private val path: Path by argument(
         help = "Path to the taskboard file"
-    ).convert { Path(it) }.check("File specified does not exist") { it.exists() }
+    ).convert { Path(it) }.validate {
+        require(it.exists()) { "File specified does not exist" }
+        require(
+            try {
+                Taskboard.fromJson(it.readText())
+                true
+            } catch (e: SerializationException) {
+                false
+            }
+        ) { "File contains invalid JSON data" }
+    }
 
     override fun run() {
         Context.configPath.writeText(path.toRealPath().toString())
