@@ -3,16 +3,19 @@ import java.nio.file.Path
 import kotlin.io.path.*
 
 object Context {
-    const val FNAME = ".taskboardpath"
+    private const val FNAME = ".taskboardpath"
+    private val parentDir = this::class.java.protectionDomain.codeSource.location.toURI().toPath().parent.toString()
+
+    val configPath: Path = Path(parentDir, FNAME)
 
     val savePath: Path? = run {
-        val path = Path(FNAME)
-        if (path.notExists()) {
-            path.createFile()
+        if (configPath.notExists()) {
+            configPath.createFile()
             return@run null
         }
 
-        Path(path.readText())
+        Path(configPath.readText())
     }
+
     val tb = savePath?.let { Taskboard.fromJson(it.readText()) }
 }
