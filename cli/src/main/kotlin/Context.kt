@@ -19,4 +19,6 @@ object Context {
     }
 
     val tb = savePath?.let { Taskboard.fromJson(it.readText()) }
+
+    fun saveFile() = savePath?.writeText(tb!!.toJson())
 }
