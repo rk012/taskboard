@@ -14,7 +14,8 @@ object Context {
             return@run null
         }
 
-        Path(configPath.readText())
+        val path = configPath.readText()
+        if (path.isNotBlank()) Path(configPath.readText()) else null
     }
 
     val tb = savePath?.let { Taskboard.fromJson(it.readText()) }

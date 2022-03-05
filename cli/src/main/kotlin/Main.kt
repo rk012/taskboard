@@ -54,7 +54,20 @@ class Open : CliktCommand(help = "Opens an existing taskboard") {
     }
 }
 
+class Status : CliktCommand(help = "Shows opened taskboard") {
+    override fun run() {
+        if (Context.tb == null) {
+            echo("Nothing is currently opened")
+            return
+        }
+
+        echo(Context.configPath)
+        echo("${Context.tb.name} @ ${Context.savePath!!.toRealPath()}")
+    }
+}
+
 fun main(args: Array<String>) = BaseCommand().subcommands(
     Init(),
-    Open()
+    Open(),
+    Status()
 ).main(args)
