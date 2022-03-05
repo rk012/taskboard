@@ -15,7 +15,7 @@ object Context {
         }
 
         val path = configPath.readText()
-        if (path.isNotBlank()) Path(configPath.readText()) else null
+        if (path.isNotBlank()) Path(configPath.readText()).let { if (it.exists()) it else null } else null
     }
 
     val tb = savePath?.let { Taskboard.fromJson(it.readText()) }

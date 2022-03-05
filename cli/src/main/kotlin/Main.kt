@@ -1,10 +1,10 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
-import com.github.ajalt.clikt.parameters.arguments.convert
-import com.github.ajalt.clikt.parameters.arguments.validate
+import com.github.ajalt.clikt.parameters.arguments.check
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.enum
+import com.github.ajalt.clikt.parameters.types.path
 import io.github.rk012.taskboard.Taskboard
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
@@ -32,10 +32,11 @@ class Init : CliktCommand(help = "Creates a new taskboard") {
     private val path: Path by option(
         "-p", "--path",
         help = "Path where the new taskboard will be saved"
-    )
-        .convert { Path(it) }
-        .defaultLazy { Path("$name.json") }
-        .check("File specified already exists. Run command with -o option to overwrite.") { overwrite || !path.exists() }
+    ).path(
+        canBeDir = false,
+    ).defaultLazy {
+        Path("$name.json")
+    }.check("File specified already exists. Run command with -o option to overwrite.") { overwrite || !path.exists() }
 
     override fun run() {
         path.deleteIfExists()
@@ -51,16 +52,18 @@ class Init : CliktCommand(help = "Creates a new taskboard") {
 class Open : CliktCommand(help = "Opens an existing taskboard") {
     private val path: Path by argument(
         help = "Path to the taskboard file"
-    ).convert { Path(it) }.validate {
-        require(it.exists()) { "File specified does not exist" }
-        require(
-            try {
-                Taskboard.fromJson(it.readText())
-                true
-            } catch (e: SerializationException) {
-                false
-            }
-        ) { "File contains invalid JSON data" }
+    ).path(
+        canBeDir = false,
+        mustExist = true,
+        mustBeWritable = true,
+        mustBeReadable = true
+    ).check("File contains invalid JSON data") {
+        try {
+            Taskboard.fromJson(it.readText())
+            true
+        } catch (e: SerializationException) {
+            false
+        }
     }
 
     override fun run() {
@@ -77,7 +80,6 @@ class Status : CliktCommand(help = "Shows opened taskboard") {
             return
         }
 
-        echo(Context.configPath)
         echo("${Context.tb.name} @ ${Context.savePath!!.toRealPath()}")
     }
 }
@@ -85,18 +87,21 @@ class Status : CliktCommand(help = "Shows opened taskboard") {
 class Create : CliktCommand(help = "Creates a new Task/Goal") {
     private enum class ObjectType { TASK, GOAL }
 
-    private val objectType: ObjectType by argument(help = "Type of object (Task, Goal) to be created").enum()
+    private val objectType: ObjectType by argument(help = "Type of object (task, goal) to be created").enum()
     private val name: String by argument(help = "Name of the object")
 
     private val date: LocalDateTime by option(
         "-d",
         "--date",
-        help = "ISO 8601 date, uses current time by default"
-    ).convert { LocalDateTime.parse(it) }.default(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
+        help = "Date/time, uses current time by default",
+        metavar = "yyyy-mm-dd hh:mm"
+    ).convert {
+        LocalDateTime.parse(it.split(" ").joinToString("T"))
+    }.default(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
 
     override fun run() {
         if (Context.tb == null) {
-            echo("No taskboard is currently opened")
+            echo("Nothing is currently opened", err = true)
             return
         }
 
