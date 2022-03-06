@@ -18,6 +18,11 @@ sealed class TaskObject(var name: String, val id: String, var time: LocalDateTim
 
     fun getLabels() = labels.toList()
 
+    @JvmName("dependencies")
+    fun getDependencies() = dependencies.toList()
+
+    fun getDependents() = dependents.toList()
+
     fun addDependency(other: TaskObject) {
         if (dependencies.contains(other)) throw DependencyAlreadyExistsException()
         if (other.hasDependency(this)) throw CircularDependencyException()
@@ -55,11 +60,11 @@ sealed class TaskObject(var name: String, val id: String, var time: LocalDateTim
     }
 
     internal fun delink() {
-        dependencies.forEach {
+        // List needs to be copied since the removeDependency/removeDependent function modifies the original list
+        dependencies.toList().forEach {
             removeDependency(it)
         }
 
-        // List needs to be copied since the removeDependency function modifies the original list
         dependents.toList().forEach {
             it.removeDependency(this)
         }
