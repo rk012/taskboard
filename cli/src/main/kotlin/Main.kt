@@ -1,8 +1,3 @@
-import Context.tb
-import Context.configPath
-import Context.savePath
-import Context.saveFile
-
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.subcommands
@@ -12,7 +7,13 @@ import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.path
+import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.Taskboard
+import io.github.rk012.taskboard.exceptions.CircularDependencyException
+import io.github.rk012.taskboard.exceptions.DependencyAlreadyExistsException
+import io.github.rk012.taskboard.exceptions.MissingTaskReqsException
+import io.github.rk012.taskboard.exceptions.NoSuchDependencyException
+import io.github.rk012.taskboard.items.Task
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
@@ -20,6 +21,11 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerializationException
 import java.nio.file.Path
 import kotlin.io.path.*
+
+import Context.tb
+import Context.configPath
+import Context.savePath
+import Context.saveFile
 
 class BaseCommand : CliktCommand(name = "taskboard") {
     override fun run() = Unit
@@ -99,10 +105,13 @@ class Info : CliktCommand(help = "Shows opened taskboard and information about T
                 Status: ${obj.status.name}
                 Labels: ${obj.getLabels().joinToString()}
                 Dependencies: 
-                    ${obj.getDependencies().joinToString("\n") { "[${it.id}] ${it.name}" }}
+                    ${
+                    obj.getDependencies()
+                        .joinToString("\n" + " ".repeat(4 * 5)) { "${if (it.status == TaskStatus.COMPLETE) "*" else " "} [${it.id}] ${it.name}" }
+                }
                     
                 Dependents:
-                    ${obj.getDependents().joinToString("\n") { "[${it.id}] ${it.name}" }}
+                    ${obj.getDependents().joinToString("\n" + " ".repeat(4 * 5)) { "  [${it.id}] ${it.name}" }}
             """.trimIndent()
             )
         }
@@ -201,6 +210,78 @@ class Config : CliktCommand(help = "Update the name/date of a Task/Goal") {
     }
 }
 
+class Dependency : CliktCommand(help = "Manage dependencies for a Task/Goal") {
+    private enum class Action { ADD, REMOVE }
+
+    private val action: Action by argument(name = "<add|remove>").enum()
+    private val objID: String by argument(name = "A", help = "ID of Task/Goal dependent")
+    private val otherID: String by argument(name = "B", help = "ID of Task/Goal dependency")
+
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+
+        val obj = tb[objID] ?: throw PrintMessage("ID $objID does not exist", error = true)
+        val other = tb[otherID] ?: throw PrintMessage("ID $otherID does not exist", error = true)
+
+        try {
+            when (action) {
+                Action.ADD -> {
+                    obj.addDependency(other)
+                    saveFile()
+                    echo("Added $otherID to $objID dependencies")
+                }
+                Action.REMOVE -> {
+                    obj.removeDependency(other)
+                    saveFile()
+                    echo("Removed $otherID from $objID dependencies")
+                }
+            }
+        } catch (e: NoSuchDependencyException) {
+            echo("$otherID is not a dependency of $objID")
+        } catch (e: DependencyAlreadyExistsException) {
+            echo("$otherID is already a dependency of $objID")
+        } catch (e: CircularDependencyException) {
+            echo("Error: Circular Dependencies")
+        }
+    }
+}
+
+class Complete : CliktCommand(help = "Mark a Task as complete") {
+    private val id: String by argument(help = HELP_OBJECT_ID)
+
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+        val obj = tb[id] ?: throw PrintMessage("ID $id does not exist", error = true)
+
+        if (obj !is Task) throw PrintMessage("$id is not a Task", error = true)
+
+        if (obj.status == TaskStatus.COMPLETE) throw PrintMessage("Task $id is already complete")
+        try {
+            obj.markAsComplete()
+        } catch (e: MissingTaskReqsException) {
+            throw PrintMessage("Not all dependencies of Task $id are complete", error = true)
+        }
+        saveFile()
+        echo("Marked task $id as complete")
+    }
+}
+
+class Incomplete : CliktCommand(help = "Mark a Task as incomplete") {
+    private val id: String by argument(help = HELP_OBJECT_ID)
+
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+        val obj = tb[id] ?: throw PrintMessage("ID $id does not exist", error = true)
+
+        if (obj !is Task) throw PrintMessage("$id is not a Task", error = true)
+
+        if (obj.status != TaskStatus.COMPLETE) throw PrintMessage("Task $id is already incomplete")
+        obj.markAsIncomplete()
+        saveFile()
+        echo("Marked task $id as incomplete")
+    }
+}
+
 fun main(args: Array<String>) = BaseCommand().subcommands(
     Init(),
     Open(),
@@ -209,4 +290,7 @@ fun main(args: Array<String>) = BaseCommand().subcommands(
     Create(),
     Delete(),
     Config(),
+    Dependency(),
+    Complete(),
+    Incomplete(),
 ).main(args)
