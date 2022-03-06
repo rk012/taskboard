@@ -65,5 +65,7 @@ class Task internal constructor(name: String, id: String, time: LocalDateTime) :
         dependencyIDs.forEach {
             addDependency(tb[it]!!)
         }
+
+        update()
     }
 }
