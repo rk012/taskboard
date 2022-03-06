@@ -2,6 +2,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
+import com.github.ajalt.clikt.parameters.arguments.optional
 import com.github.ajalt.clikt.parameters.options.*
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.path
@@ -73,7 +74,9 @@ class Open : CliktCommand(help = "Opens an existing taskboard") {
     }
 }
 
-class Status : CliktCommand(help = "Shows opened taskboard") {
+class Info : CliktCommand(help = "Shows opened taskboard and information about Task/Goal if ID is given") {
+    private val id: String? by argument(help = "ID of the Task/Goal").optional()
+
     override fun run() {
         if (Context.tb == null) {
             echo("Nothing is currently opened")
@@ -81,6 +84,46 @@ class Status : CliktCommand(help = "Shows opened taskboard") {
         }
 
         echo("${Context.tb.name} @ ${Context.savePath!!.toRealPath()}")
+
+        if (id != null) {
+            val obj = Context.tb[id!!]
+
+            if (obj == null) {
+                echo("ID $id does not exist", err = true)
+                return
+            }
+
+            echo(
+                """
+                Name: ${obj.name}
+                ID: ${obj.id}
+                Date: ${obj.time.date} ${obj.time.hour}:${obj.time.minute}
+                Status: ${obj.status.name}
+                Labels: ${obj.getLabels().joinToString()}
+                Dependencies: 
+                    ${obj.getDependencies().joinToString("\n") { "[${it.id}] ${it.name}" }}
+                    
+                Dependents:
+                    ${obj.getDependents().joinToString("\n") { "[${it.id}] ${it.name}" }}
+            """.trimIndent()
+            )
+        }
+    }
+}
+
+class Rename : CliktCommand(help = "Renames the taskboard") {
+    private val newName: String by argument(help = "New name for the taskboard")
+
+    override fun run() {
+        if (Context.tb == null) {
+            echo("Nothing is currently opened", err = true)
+            return
+        }
+
+        val oldName = Context.tb.name
+        Context.tb.name = newName
+        echo("Renamed $oldName -> $newName")
+        Context.saveFile()
     }
 }
 
@@ -115,9 +158,33 @@ class Create : CliktCommand(help = "Creates a new Task/Goal") {
     }
 }
 
+class Delete : CliktCommand(help = "Deletes a Task/Goal") {
+    private val id: String by argument(help = "ID of the Task/Goal")
+
+    override fun run() {
+        if (Context.tb == null) {
+            echo("Nothing is currently opened", err = true)
+            return
+        }
+
+        val obj = Context.tb[id]
+
+        if (obj == null) {
+            echo("ID $id does not exist", err = true)
+            return
+        }
+
+        Context.tb.removeObject(obj)
+        Context.saveFile()
+        echo("Deleted \"${obj.name}\"")
+    }
+}
+
 fun main(args: Array<String>) = BaseCommand().subcommands(
     Init(),
     Open(),
-    Status(),
+    Info(),
+    Rename(),
     Create(),
+    Delete(),
 ).main(args)
