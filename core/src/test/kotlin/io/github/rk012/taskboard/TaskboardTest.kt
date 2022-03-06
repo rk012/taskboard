@@ -82,6 +82,7 @@ class TaskboardTest {
         tb.addLabel(t2, "Label 1")
 
         assertEquals(listOf("Label 0", "Label 1", "Label 2"), t1.labels)
+        assertEquals(listOf("Label 0", "Label 1", "Label 2"), t1.getLabels())
 
         assertEquals(listOf(t0, t1, t2), tb.query())
         assertEquals(listOf(t0, t1, t2), tb.query(includeLabels = listOf("Label 0", "Label 1")))
