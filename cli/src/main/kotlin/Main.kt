@@ -180,6 +180,51 @@ class Delete : CliktCommand(help = "Deletes a Task/Goal") {
     }
 }
 
+class Config : CliktCommand(help = "Update the name/date of a Task/Goal") {
+    private val id: String by argument(help = "ID of the Task/Goal")
+
+    private val newName: String? by option(
+        "-n",
+        "--new-name",
+        help = "The new name for the Task/Goal"
+    )
+    private val newDate: LocalDateTime? by option(
+        "-d",
+        "--new-date",
+        help = "The new date for the Task/Goal",
+        metavar = "yyyy-mm-dd hh:mm"
+    ).convert {
+        LocalDateTime.parse(it.split(" ").joinToString("T"))
+    }
+
+    override fun run() {
+        if (Context.tb == null) {
+            echo("Nothing is currently opened", err = true)
+            return
+        }
+
+        val obj = Context.tb[id]
+
+        if (obj == null) {
+            echo("ID $id does not exist", err = true)
+            return
+        }
+
+        if (newName != null) {
+            obj.name = newName!!
+        }
+
+        if (newDate != null) {
+            obj.time = newDate!!
+        }
+
+        if (newName != null || newDate != null) {
+            Context.saveFile()
+            echo("Updated task ${obj.id}")
+        }
+    }
+}
+
 fun main(args: Array<String>) = BaseCommand().subcommands(
     Init(),
     Open(),
@@ -187,4 +232,5 @@ fun main(args: Array<String>) = BaseCommand().subcommands(
     Rename(),
     Create(),
     Delete(),
+    Config(),
 ).main(args)
