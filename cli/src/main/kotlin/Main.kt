@@ -1,4 +1,10 @@
+import Context.tb
+import Context.configPath
+import Context.savePath
+import Context.saveFile
+
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.check
@@ -22,29 +28,29 @@ class BaseCommand : CliktCommand(name = "taskboard") {
 class Init : CliktCommand(help = "Creates a new taskboard") {
     private val name: String by option(
         "-n", "--name",
-        help = "Name of the taskboard to be created"
+        help = HELP_TASKBOARD_NAME_CREATE
     ).prompt()
 
     private val overwrite: Boolean by option(
         "-o", "-overwrite",
-        help = "If set, deletes specified file if exists when creating a new taskboard"
+        help = HELP_INIT_OVERWRITE
     ).flag()
 
     private val path: Path by option(
         "-p", "--path",
-        help = "Path where the new taskboard will be saved"
+        help = HELP_TASKBOARD_PATH_NEW
     ).path(
         canBeDir = false,
     ).defaultLazy {
         Path("$name.json")
-    }.check("File specified already exists. Run command with -o option to overwrite.") { overwrite || !path.exists() }
+    }.check(INIT_FILE_EXISTS) { overwrite || !path.exists() }
 
     override fun run() {
         path.deleteIfExists()
         path.createFile()
         path.writeText(Taskboard(name).toJson())
 
-        Context.configPath.writeText(path.toRealPath().toString())
+        configPath.writeText(path.toRealPath().toString())
 
         echo("Created new taskboard \"$name\" at ${path.toRealPath()}")
     }
@@ -52,13 +58,13 @@ class Init : CliktCommand(help = "Creates a new taskboard") {
 
 class Open : CliktCommand(help = "Opens an existing taskboard") {
     private val path: Path by argument(
-        help = "Path to the taskboard file"
+        help = HELP_TASKBOARD_PATH
     ).path(
         canBeDir = false,
         mustExist = true,
         mustBeWritable = true,
         mustBeReadable = true
-    ).check("File contains invalid JSON data") {
+    ).check(OPEN_INVALID_JSON) {
         try {
             Taskboard.fromJson(it.readText())
             true
@@ -68,30 +74,22 @@ class Open : CliktCommand(help = "Opens an existing taskboard") {
     }
 
     override fun run() {
-        Context.configPath.writeText(path.toRealPath().toString())
+        configPath.writeText(path.toRealPath().toString())
 
         echo("Loaded ${path.toRealPath()}")
     }
 }
 
 class Info : CliktCommand(help = "Shows opened taskboard and information about Task/Goal if ID is given") {
-    private val id: String? by argument(help = "ID of the Task/Goal").optional()
+    private val id: String? by argument(help = HELP_OBJECT_ID).optional()
 
     override fun run() {
-        if (Context.tb == null) {
-            echo("Nothing is currently opened")
-            return
-        }
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
 
-        echo("${Context.tb.name} @ ${Context.savePath!!.toRealPath()}")
+        echo("${tb.name} @ ${savePath!!.toRealPath()}")
 
         if (id != null) {
-            val obj = Context.tb[id!!]
-
-            if (obj == null) {
-                echo("ID $id does not exist", err = true)
-                return
-            }
+            val obj = tb[id!!] ?: throw PrintMessage("ID $id does not exist", error = true)
 
             echo(
                 """
@@ -112,103 +110,81 @@ class Info : CliktCommand(help = "Shows opened taskboard and information about T
 }
 
 class Rename : CliktCommand(help = "Renames the taskboard") {
-    private val newName: String by argument(help = "New name for the taskboard")
+    private val newName: String by argument(help = HELP_TASKBOARD_NAME_NEW)
 
     override fun run() {
-        if (Context.tb == null) {
-            echo("Nothing is currently opened", err = true)
-            return
-        }
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
 
-        val oldName = Context.tb.name
-        Context.tb.name = newName
+        val oldName = tb.name
+        tb.name = newName
         echo("Renamed $oldName -> $newName")
-        Context.saveFile()
+        saveFile()
     }
 }
 
 class Create : CliktCommand(help = "Creates a new Task/Goal") {
     private enum class ObjectType { TASK, GOAL }
 
-    private val objectType: ObjectType by argument(help = "Type of object (task, goal) to be created").enum()
-    private val name: String by argument(help = "Name of the object")
+    private val objectType: ObjectType by argument(help = HELP_OBJECT_CREATE).enum()
+    private val name: String by argument(help = HELP_OBJECT_NAME)
 
     private val date: LocalDateTime by option(
         "-d",
         "--date",
-        help = "Date/time, uses current time by default",
-        metavar = "yyyy-mm-dd hh:mm"
+        help = HELP_OBJECT_DATE,
+        metavar = METAVAR_OBJECT_DATE
     ).convert {
         LocalDateTime.parse(it.split(" ").joinToString("T"))
     }.default(Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()))
 
     override fun run() {
-        if (Context.tb == null) {
-            echo("Nothing is currently opened", err = true)
-            return
-        }
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
 
         val (newObj, type) = when (objectType) {
-            ObjectType.TASK -> Pair(Context.tb.createTask(name, date), "task")
-            ObjectType.GOAL -> Pair(Context.tb.createGoal(name, date), "goal")
+            ObjectType.TASK -> Pair(tb.createTask(name, date), "task")
+            ObjectType.GOAL -> Pair(tb.createGoal(name, date), "goal")
         }
 
-        Context.saveFile()
+        saveFile()
         echo("Created new $type \"${newObj.name}\" with id ${newObj.id}")
     }
 }
 
 class Delete : CliktCommand(help = "Deletes a Task/Goal") {
-    private val id: String by argument(help = "ID of the Task/Goal")
+    private val id: String by argument(help = HELP_OBJECT_ID)
 
     override fun run() {
-        if (Context.tb == null) {
-            echo("Nothing is currently opened", err = true)
-            return
-        }
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
 
-        val obj = Context.tb[id]
+        val obj = tb[id] ?: throw PrintMessage("ID $id does not exist", error = true)
 
-        if (obj == null) {
-            echo("ID $id does not exist", err = true)
-            return
-        }
-
-        Context.tb.removeObject(obj)
-        Context.saveFile()
+        tb.removeObject(obj)
+        saveFile()
         echo("Deleted \"${obj.name}\"")
     }
 }
 
 class Config : CliktCommand(help = "Update the name/date of a Task/Goal") {
-    private val id: String by argument(help = "ID of the Task/Goal")
+    private val id: String by argument(help = HELP_OBJECT_ID)
 
     private val newName: String? by option(
         "-n",
         "--new-name",
-        help = "The new name for the Task/Goal"
+        help = HELP_OBJECT_NAME_NEW
     )
     private val newDate: LocalDateTime? by option(
         "-d",
         "--new-date",
-        help = "The new date for the Task/Goal",
-        metavar = "yyyy-mm-dd hh:mm"
+        help = HELP_OBJECT_DATE_NEW,
+        metavar = METAVAR_OBJECT_DATE
     ).convert {
         LocalDateTime.parse(it.split(" ").joinToString("T"))
     }
 
     override fun run() {
-        if (Context.tb == null) {
-            echo("Nothing is currently opened", err = true)
-            return
-        }
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
 
-        val obj = Context.tb[id]
-
-        if (obj == null) {
-            echo("ID $id does not exist", err = true)
-            return
-        }
+        val obj = tb[id] ?: throw PrintMessage("ID $id does not exist", error = true)
 
         if (newName != null) {
             obj.name = newName!!
@@ -219,7 +195,7 @@ class Config : CliktCommand(help = "Update the name/date of a Task/Goal") {
         }
 
         if (newName != null || newDate != null) {
-            Context.saveFile()
+            saveFile()
             echo("Updated task ${obj.id}")
         }
     }
