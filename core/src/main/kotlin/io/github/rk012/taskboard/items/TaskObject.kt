@@ -16,6 +16,8 @@ sealed class TaskObject(var name: String, val id: String, var time: LocalDateTim
         update()
     }
 
+    fun getLabels() = labels.toList()
+
     fun addDependency(other: TaskObject) {
         if (dependencies.contains(other)) throw DependencyAlreadyExistsException()
         if (other.hasDependency(this)) throw CircularDependencyException()
