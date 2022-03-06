@@ -154,6 +154,9 @@ class TaskObjectTest {
         setupDependencies()
 
         assertTrue(t1.getDependentSet().containsAll(setOf(t3, t2, g0)))
+
+        assertEquals(setOf(t0, t1), t3.getDependencies().toSet())
+        assertEquals(setOf(t3, t2), t1.getDependents().toSet())
     }
 
     @Test
