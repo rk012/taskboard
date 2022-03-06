@@ -60,11 +60,11 @@ sealed class TaskObject(var name: String, val id: String, var time: LocalDateTim
     }
 
     internal fun delink() {
-        dependencies.forEach {
+        // List needs to be copied since the removeDependency/removeDependent function modifies the original list
+        dependencies.toList().forEach {
             removeDependency(it)
         }
 
-        // List needs to be copied since the removeDependency function modifies the original list
         dependents.toList().forEach {
             it.removeDependency(this)
         }
