@@ -285,5 +285,7 @@ class TaskboardTest {
             json,
             Taskboard.fromJson(json).toJson()
         )
+
+        assertTrue(Taskboard.fromJson(json)[t1.id]!!.status == TaskStatus.COMPLETE)
     }
 }
