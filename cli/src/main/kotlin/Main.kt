@@ -282,6 +282,15 @@ class Incomplete : CliktCommand(help = "Mark a Task as incomplete") {
     }
 }
 
+class ListCommand : CliktCommand(name = "list") {
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+        printTable(tb.query())
+        echo()
+    }
+
+}
+
 fun main(args: Array<String>) = BaseCommand().subcommands(
     Init(),
     Open(),
@@ -293,4 +302,5 @@ fun main(args: Array<String>) = BaseCommand().subcommands(
     Dependency(),
     Complete(),
     Incomplete(),
+    ListCommand(),
 ).main(args)
