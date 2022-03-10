@@ -9,10 +9,6 @@ import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.path
 import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.Taskboard
-import io.github.rk012.taskboard.exceptions.CircularDependencyException
-import io.github.rk012.taskboard.exceptions.DependencyAlreadyExistsException
-import io.github.rk012.taskboard.exceptions.MissingTaskReqsException
-import io.github.rk012.taskboard.exceptions.NoSuchDependencyException
 import io.github.rk012.taskboard.items.Task
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
@@ -26,6 +22,7 @@ import Context.tb
 import Context.configPath
 import Context.savePath
 import Context.saveFile
+import io.github.rk012.taskboard.exceptions.*
 
 class BaseCommand : CliktCommand(name = "taskboard") {
     override fun run() = Unit
@@ -282,10 +279,93 @@ class Incomplete : CliktCommand(help = "Mark a Task as incomplete") {
     }
 }
 
-class ListCommand : CliktCommand(name = "list") {
+class ListCommand : CliktCommand(name = "list", help = "List Task/Goals with various filters") {
+    private val sortOptions: String by option(
+        "-o",
+        "--order-by",
+        help = """
+            Specifies how to order query results.
+            
+            d - Dependents
+            t - Time
+            n - Name
+            
+            Default: "dtn"
+        """.trimIndent()
+    ).default("dtn").check { it.length <= 3 }
+
+    private val includeLabels: List<String> by option(
+        "--include-labels",
+        "-l",
+        help = "List of labels to filter by. Use -r to require all labels"
+    ).multiple()
+
+    private val requireAllLabels: Boolean by option(
+        "--require-all",
+        "-r",
+        help = "Require query results to contain ALL labels specified with --include-labels option"
+    ).flag()
+
+    private val excludeLabels: List<String> by option(
+        "--exclude-labels",
+        "-e",
+        help = "List of labels to exclude"
+    ).multiple()
+
+    private val excludeCompleted: Boolean by option(
+        "--exclude-completed",
+        "-c",
+        help = "Prevent completed tasks/goals from being shown."
+    ).flag(
+        "--include-completed",
+        "-C",
+        default = false
+    )
+
+    private val excludeNotStarted: Boolean by option(
+        "--exclude-not-started",
+        "-s",
+        help = "Prevent task/goals not started from being shown."
+    ).flag(
+        "--include-not-started",
+        "-S",
+        default = false
+    )
+
+    private val filterItem: Taskboard.FilterItems by option(
+        help = "Display All, Tasks, or Goals only"
+    ).switch(
+        "-a" to Taskboard.FilterItems.ALL,
+        "-t" to Taskboard.FilterItems.TASK,
+        "-g" to Taskboard.FilterItems.GOAL
+    ).default(Taskboard.FilterItems.ALL)
+
     override fun run() {
         tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
-        printTable(tb.query())
+
+        try {
+            printTable(
+                tb.query(
+                    sortOptions = sortOptions.map {
+                        when (it) {
+                            'd' -> Taskboard.SortOptions.DEPENDENTS
+                            't' -> Taskboard.SortOptions.TIME
+                            'n' -> Taskboard.SortOptions.NAME
+                            else -> throw PrintMessage("Error: --order-by can only contain letters d, t, and n")
+                        }
+                    },
+                    includeLabels,
+                    requireAllLabels,
+                    excludeLabels,
+                    excludeCompleted,
+                    excludeNotStarted,
+                    filterItem
+                )
+            )
+        } catch (e: NoSuchLabelException) {
+            echo("Error: Label ${e.labelName} does not exist.")
+        }
+
         echo()
     }
 
