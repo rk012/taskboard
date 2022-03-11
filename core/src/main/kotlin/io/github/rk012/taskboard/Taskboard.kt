@@ -110,10 +110,7 @@ class Taskboard(var name: String) {
     fun addLabel(obj: TaskObject, name: String, createNew: Boolean = false): Boolean {
         if (createNew) createLabel(name)
 
-        return if (hasLabel(name)) {
-            obj.labels.add(name)
-            true
-        } else false
+        return if (hasLabel(name) && !obj.labels.contains(name)) obj.labels.add(name) else false
     }
 
     fun removeLabel(obj: TaskObject, name: String): Boolean = if (!hasLabel(name)) false else obj.labels.remove(name)
