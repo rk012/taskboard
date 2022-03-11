@@ -1,3 +1,7 @@
+import Context.configPath
+import Context.saveFile
+import Context.savePath
+import Context.tb
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.PrintMessage
 import com.github.ajalt.clikt.core.subcommands
@@ -9,6 +13,7 @@ import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.path
 import io.github.rk012.taskboard.TaskStatus
 import io.github.rk012.taskboard.Taskboard
+import io.github.rk012.taskboard.exceptions.*
 import io.github.rk012.taskboard.items.Task
 import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
@@ -17,12 +22,6 @@ import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.SerializationException
 import java.nio.file.Path
 import kotlin.io.path.*
-
-import Context.tb
-import Context.configPath
-import Context.savePath
-import Context.saveFile
-import io.github.rk012.taskboard.exceptions.*
 
 class BaseCommand : CliktCommand(name = "taskboard") {
     override fun run() = Unit
