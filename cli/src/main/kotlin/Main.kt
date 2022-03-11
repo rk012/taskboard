@@ -243,6 +243,80 @@ class Dependency : CliktCommand(help = "Manage dependencies for a Task/Goal") {
     }
 }
 
+class Label : CliktCommand() {
+    override fun run() = Unit
+}
+
+class CreateLabel : CliktCommand(name = "create", help = "Creates a new label") {
+    private val name: String by argument(help = HELP_LABEL_CREATE)
+
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+
+        echo(
+            if (tb.createLabel(name)) "Created label $name"
+            else "Label $name already exists"
+        )
+
+        saveFile()
+    }
+}
+
+class AddLabel : CliktCommand(name = "add", help = "Adds a label to a Task/Goal") {
+    private val id: String by argument(help = HELP_OBJECT_ID)
+    private val name: String by argument(help = HELP_LABEL)
+
+    private val createNew: Boolean by option(
+        "-c",
+        "--create-new",
+        help = "If set, new label is created if it doesn't exist in the taskboard"
+    ).flag()
+
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+        val obj = tb[id] ?: throw PrintMessage("ID $id does not exist", error = true)
+
+        echo(
+            if (tb.addLabel(obj, name, createNew)) "Added label $name to $id"
+            else "Label $name does not exist"
+        )
+
+        saveFile()
+    }
+}
+
+class RemoveLabel : CliktCommand(name = "remove", help = "Removes a label to a Task/Goal") {
+    private val id: String by argument(help = HELP_OBJECT_ID)
+    private val name: String by argument(help = HELP_LABEL)
+
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+        val obj = tb[id] ?: throw PrintMessage("ID $id does not exist", error = true)
+
+        echo(
+            if (tb.removeLabel(obj, name)) "Removed label $name from $id"
+            else "Label $name does not exist or is already not assigned to $id"
+        )
+
+        saveFile()
+    }
+}
+
+class DeleteLabel : CliktCommand(name = "delete", help = "Deletes a label from the taskboard") {
+    private val name: String by argument(help = HELP_LABEL)
+
+    override fun run() {
+        tb ?: throw PrintMessage(TASKBOARD_NOT_OPEN, error = true)
+
+        echo(
+            if (tb.deleteLabel(name)) "Deleted label $name"
+            else "Label $name does not exist"
+        )
+
+        saveFile()
+    }
+}
+
 class Complete : CliktCommand(help = "Mark a Task as complete") {
     private val id: String by argument(help = HELP_OBJECT_ID)
 
@@ -363,7 +437,7 @@ class ListCommand : CliktCommand(name = "list", help = "List Task/Goals with var
                 )
             )
         } catch (e: NoSuchLabelException) {
-            echo("Error: Label ${e.labelName} does not exist.")
+            echo("Error: Label ${e.labelName} does not exist")
         }
 
         echo()
@@ -380,6 +454,12 @@ fun main(args: Array<String>) = BaseCommand().subcommands(
     Delete(),
     Config(),
     Dependency(),
+    Label().subcommands(
+        CreateLabel(),
+        AddLabel(),
+        RemoveLabel(),
+        DeleteLabel(),
+    ),
     Complete(),
     Incomplete(),
     ListCommand(),
