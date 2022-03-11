@@ -278,7 +278,7 @@ class AddLabel : CliktCommand(name = "add", help = "Adds a label to a Task/Goal"
 
         echo(
             if (tb.addLabel(obj, name, createNew)) "Added label $name to $id"
-            else "Label $name does not exist"
+            else "Label $name does not exist or is already assigned to $id"
         )
 
         saveFile()
